@@ -6,4 +6,4 @@
 
 If you're not using pipenv, use requirements.txt instead.
 
-This script is specific to my needs, but if you wanted to extend it to push content to WordPress, for example, you could probably do that pretty easily using the `wordpress-api` package.
+This script is specific to my needs, but if you wanted to extend it to push content to WordPress, for example, you could probably do that pretty easily.
