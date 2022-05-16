@@ -109,48 +109,70 @@ description: {description}
             base_url = '/static/img/blog/'
             md = md.replace(image, base_url + new_name)
 
-        # find all tables in the markdown
-        tables = re.findall(r'<table>.*</table>', md, re.DOTALL)
+        # find all tables in the markdown using soup
+        soup = bs(md, 'html.parser')
+        tables = soup.find_all('table')
 
         # loop tables
         for table in tables:
             # transform table
-            md = md.replace(table, transform_table(table))
+            md = md.replace(str(table), transform_table(table))
 
     # save the markdown to the /markdown folder
     with open('markdown/' + slug + '.md', 'w') as f:
         f.write(md)
 
 def transform_table(table):
-    # wrap table in a div with class table-expand
-    table = '<div class="table-expand">\n' + table + '\n</div>'
-    
-    # add classes table is-bordered is-narrow is-fullwidth mb-3 to table element
-    table = re.sub(r'<table>', '<table class="table is-bordered is-narrow is-fullwidth mb-3">', table)
+    # create empty tbody
+    tbody = bs('', 'html.parser')
 
-    # prettify table using BeautifulSoup
-    soup = bs(table, 'html.parser')
-    
-    # remove any <p> or </p> tags from th elements
-    for th in soup.find_all('th'):
-        th_text = th.text
-        p = th.find('p')
-        if p:
-            p.extract()
-        th.string = th_text
-    
-    # do same for td elements
-    for td in soup.find_all('td'):
-        td_text = td.text
-        p = td.find('p')
-        if p:
-            p.extract()
-        td.string = td_text
+    # first row of table is the header
+    header = table.tr.extract()
 
-    table = soup.prettify()
+    # create thead using header
+    thead = bs(f'<thead>{header}</thead>', 'html.parser')
+
+    # loop through rows in table
+    for row in table.find_all('tr'):
+        tbody.append(row)
+
+    # create tbody
+    tbody = bs(f'<tbody>{tbody}</tbody>', 'html.parser')
+
+    # convert tbody to string
+    tbody = str(tbody)
+
+    # replace th with td
+    tbody = tbody.replace('<th>', '<td>')
+    tbody = tbody.replace('</th>', '</td>')
+
+    # create new table with thead and tbody
+    new_table = bs(f'<table>{thead}{tbody}</table>', 'html.parser')
+
+    # convert new table to string
+    new_table = str(new_table)
+
+    # remove <p> and </p>
+    new_table = new_table.replace('<p>', '')
+    new_table = new_table.replace('</p>', '')
+
+    # remove all whitespace
+    new_table = new_table.replace('\n', '')
+    new_table = new_table.replace('\t', '')
+    new_table = new_table.replace('\r', '')
+    new_table = new_table.replace('\f', '')
+
+    # convert new table back to soup object
+    new_table = bs(new_table, 'html.parser')
+
+    # add classes
+    new_table.find('table').attrs['class'] = 'table is-bordered is-narrow is-fullwidth'
+
+    # prettify new table
+    new_table = new_table.prettify()
 
     # return table
-    return table
+    return f'<div class="table-expand">{new_table}</div>'
 
 if __name__ == '__main__':
     # if -r is passed as an argument, run erase()
